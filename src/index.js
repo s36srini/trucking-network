@@ -26,23 +26,7 @@ canvas.addEventListener('mousemove', function(e) {
 
 // Highlight intersection upon click
 canvas.addEventListener('mousedown', function(e) {
-    let c;
-    let closest_points = getNearestPointsInRange(intersectionPoints, new Point(e.offsetX, e.offsetY), ROAD_WIDTH);
-    let i = 0;
-    while((c = intersections.get(closest_points[i])) && (i++ < closest_points.length)) {
-        if (ctx.isPointInPath(c.drawing, e.offsetX, e.offsetY)) {
-            if(c.state == 0) {
-                ctx.fillStyle = CHANGE_FILL;
-                c.state = 1;
-            } else {
-                ctx.fillStyle = DEFAULT_FILL;
-                c.state = 0;
-            }
-            
-        }
-        // Draw circle
-        ctx.fill(c.drawing);
-    }
+    changeIntersectionColour(e);
 });
 
 var roads = [];
@@ -140,7 +124,25 @@ class Road {
 }
 
 
-
+function changeIntersectionColour(e) {
+    let c;
+    let closest_points = getNearestPointsInRange(intersectionPoints, new Point(e.offsetX, e.offsetY), ROAD_WIDTH);
+    let i = 0;
+    while((c = intersections.get(closest_points[i])) && (i++ < closest_points.length)) {
+        if (ctx.isPointInPath(c.drawing, e.offsetX, e.offsetY)) {
+            if(c.state == 0) {
+                ctx.fillStyle = CHANGE_FILL;
+                c.state = 1;
+            } else {
+                ctx.fillStyle = DEFAULT_FILL;
+                c.state = 0;
+            }
+            
+        }
+        // Draw circle
+        ctx.fill(c.drawing);
+    }
+}
 
 function createRandomizedRoads(numRoads) {
     let visited = new Set();
