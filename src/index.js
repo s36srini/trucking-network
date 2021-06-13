@@ -7,6 +7,16 @@ const CANVAS_WIDTH = canvas.width;
 const DEFAULT_FILL = 'red';
 const CHANGE_FILL = 'green';
 
+Number.prototype.between = function(a, b) {
+    var min = Math.min.apply(Math, [a, b]),
+      max = Math.max.apply(Math, [a, b]);
+    return this >= min && this <= max;
+};
+
+Array.prototype.last = function(){
+    return this[this.length - 1];
+};
+
 
 // Log mouse position
 canvas.addEventListener('mousemove', function(e) {
@@ -31,7 +41,6 @@ canvas.addEventListener('mousedown', function(e) {
             
         }
         // Draw circle
-        // ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fill(c.drawing);
     }
 });
@@ -130,11 +139,7 @@ class Road {
     }
 }
 
-Number.prototype.between = function(a, b) {
-    var min = Math.min.apply(Math, [a, b]),
-      max = Math.max.apply(Math, [a, b]);
-    return this >= min && this <= max;
-};
+
 
 
 function createRandomizedRoads(numRoads) {
@@ -159,7 +164,7 @@ function createRandomizedRoads(numRoads) {
             start = roads[i-1].end;
             let vec = new Vector(xPos2 - start.x, yPos2 - start.y);
             let angle_diff = vec.angleDiff(roads[i-1].toVector());
-            while((angle_diff < (Math.PI / 4)) && (angle_diff > (14*Math.PI / 8)) ) { // Make angle between road i and i-1 at least 30 degrees, need to use dot product
+            while((angle_diff < (Math.PI / 4)) && (angle_diff > (14*Math.PI / 8)) ) { // Make angle between road i and i-1 at least 45 degrees, need to use dot product
                 xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
                 yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
                 vec = new Vector(xPos2 - start.x, yPos2 - start.y);
@@ -173,8 +178,12 @@ function createRandomizedRoads(numRoads) {
         let road = new Road(start, end);
         road.draw();
         roads.push(road);
-        console.log("Road from: (" + xPos1.toString() + ", " + yPos1.toString() + ") to (" + xPos2.toString() + ", " + yPos2.toString() + ")");
+        //console.log("Road from: (" + xPos1.toString() + ", " + yPos1.toString() + ") to (" + xPos2.toString() + ", " + yPos2.toString() + ")");
     }
+    // Close the loop
+    let last_road = new Road(roads.last().end, roads[0].start); 
+    last_road.draw();
+    roads.push(last_road);
 }
 
 function getIntersection(road1, road2) {
@@ -264,13 +273,7 @@ function getNearestPointsInRange(points, rpoint, range) {
     return output;
 }
 
-// createRoad(new Point(50, 100), new Point(300, 100));
-// createRoad(new Point(300, 100), new Point(300, 200));
-// createRoad(new Point(300, 200), new Point(500, 200));
-// createRoad(new Point(500, 200), new Point(700, 500));
-// createRoad(new Point(700, 500), new Point(200, 600));
-// createRoad(new Point(200, 600), new Point(150, 200));
-createRandomizedRoads(10);
+createRandomizedRoads(20); // Will create n+1 roads due to the loop closure
 getAllIntersections(roads);
 
 // Sorting intersections to perform binary search lookup on mouse event to reduce runtime
