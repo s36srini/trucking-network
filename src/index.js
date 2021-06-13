@@ -55,6 +55,10 @@ class Vector {
         // Apply dot product formula
         return Math.acos((this.xdist*other.xdist + this.ydist*other.ydist) / (this.mag()*other.mag()));
     }
+
+    reflect() {
+        return new Vector(-this.xdist, -this.ydist);
+    }
 }
 
 class Road {
@@ -165,8 +169,8 @@ function createRandomizedRoads(numRoads) {
         if(i > 0) {
             start = roads[i-1].end;
             let vec = new Vector(xPos2 - start.x, yPos2 - start.y);
-            let angle_diff = vec.angleDiff(roads[i-1].toVector());
-            while((angle_diff < (Math.PI / 4)) && (angle_diff > (14*Math.PI / 8)) ) { // Make angle between road i and i-1 at least 45 degrees, need to use dot product
+            let angle_diff = vec.angleDiff(roads[i-1].toVector().reflect());
+            while((angle_diff < (Math.PI / 4)) || (angle_diff > (14*Math.PI / 8)) ) { // Make angle between road i and i-1 at least 45 degrees, need to use dot product
                 xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
                 yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
                 vec = new Vector(xPos2 - start.x, yPos2 - start.y);
@@ -275,7 +279,7 @@ function getNearestPointsInRange(points, rpoint, range) {
     return output;
 }
 
-createRandomizedRoads(20); // Will create n+1 roads due to the loop closure
+createRandomizedRoads(10); // Will create n+1 roads due to the loop closure
 getAllIntersections(roads);
 
 // Sorting intersections to perform binary search lookup on mouse event to reduce runtime
