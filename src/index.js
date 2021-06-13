@@ -13,6 +13,10 @@ Number.prototype.between = function(a, b) {
     return this >= min && this <= max;
 };
 
+Number.prototype.toDeg = function(a) { 
+    return this*180 / Math.PI;
+};
+
 Array.prototype.last = function(){
     return this[this.length - 1];
 };
@@ -169,8 +173,8 @@ function createRandomizedRoads(numRoads) {
         if(i > 0) {
             start = roads[i-1].end;
             let vec = new Vector(xPos2 - start.x, yPos2 - start.y);
-            let angle_diff = vec.angleDiff(roads[i-1].toVector().reflect());
-            while((angle_diff < (Math.PI / 4)) || (angle_diff > (14*Math.PI / 8)) ) { // Make angle between road i and i-1 at least 45 degrees, need to use dot product
+            let angle_diff = vec.angleDiff(roads[i-1].toVector().reflect()).toDeg();
+            while(angle_diff < 45 || angle_diff > 315) { // Make angle between road i and i-1 at least 45 degrees, need to use dot product
                 xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
                 yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
                 vec = new Vector(xPos2 - start.x, yPos2 - start.y);
