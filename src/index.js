@@ -57,7 +57,7 @@ class Vector {
 
     angleDiff(other) { // Other vector
         // Apply dot product formula
-        return Math.acos((this.xdist*other.xdist + this.ydist*other.ydist) / (this.mag()*other.mag()));
+        return Math.abs(Math.acos((this.xdist*other.xdist + this.ydist*other.ydist) / (this.mag()*other.mag())));
     }
 
     reflect() {
