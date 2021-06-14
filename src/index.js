@@ -13,7 +13,7 @@ Number.prototype.between = function(a, b) {
     return this >= min && this <= max;
 };
 
-Number.prototype.toDeg = function(a) { 
+Number.prototype.toDeg = function() { 
     return this*180 / Math.PI;
 };
 
