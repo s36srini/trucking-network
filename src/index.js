@@ -4,6 +4,22 @@ var ctx = canvas.getContext('2d');
 const ROAD_WIDTH  = 10;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
+const DEFAULT_FILL = 'red';
+const CHANGE_FILL = 'green';
+
+Number.prototype.between = function(a, b) {
+    var min = Math.min.apply(Math, [a, b]),
+      max = Math.max.apply(Math, [a, b]);
+    return this >= min && this <= max;
+};
+
+Number.prototype.toDeg = function() { 
+    return this*180 / Math.PI;
+};
+
+Array.prototype.last = function(){
+    return this[this.length - 1];
+};
 
 
 // Log mouse position
@@ -14,24 +30,7 @@ canvas.addEventListener('mousemove', function(e) {
 
 // Highlight intersection upon click
 canvas.addEventListener('mousedown', function(e) {
-    let c;
-    let closest_points = getNearestPointsInRange(intersectionPoints, new Point(e.offsetX, e.offsetY), ROAD_WIDTH);
-    let i = 0;
-    while((c = intersections.get(closest_points[i])) && (i++ < closest_points.length)) {
-        if (ctx.isPointInPath(c.drawing, e.offsetX, e.offsetY)) {
-            if(c.state == 0) {
-                ctx.fillStyle = 'green';
-                c.state = 1;
-            } else {
-                ctx.fillStyle = 'white';
-                c.state = 0;
-            }
-            
-        }
-        // Draw circle
-        // ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fill(c.drawing);
-    }
+    changeIntersectionColour(e);
 });
 
 var roads = [];
@@ -46,10 +45,34 @@ class Point {
   }
 }
 
+class Vector {
+    constructor(xdist, ydist) {
+        this.xdist = xdist;
+        this.ydist = ydist;
+    }
+
+    mag() {
+        return Math.sqrt((this.xdist**2) + (this.ydist**2));
+    }
+
+    angleDiff(other) { // Other vector
+        // Apply dot product formula
+        return Math.abs(Math.acos((this.xdist*other.xdist + this.ydist*other.ydist) / (this.mag()*other.mag())));
+    }
+
+    reflect() {
+        return new Vector(-this.xdist, -this.ydist);
+    }
+}
+
 class Road {
     constructor(start, end) {
         this.start = start;
         this.end = end;
+    }
+
+    toVector() {
+        return new Vector(this.end.x - this.start.x, this.end.y - this.start.y);
     }
 
     slope() {
@@ -108,12 +131,26 @@ class Road {
     }
 }
 
-Number.prototype.between = function(a, b) {
-    var min = Math.min.apply(Math, [a, b]),
-      max = Math.max.apply(Math, [a, b]);
-    return this >= min && this <= max;
-};
 
+function changeIntersectionColour(e) {
+    let c;
+    let closest_points = getNearestPointsInRange(intersectionPoints, new Point(e.offsetX, e.offsetY), ROAD_WIDTH);
+    let i = 0;
+    while((c = intersections.get(closest_points[i])) && (i++ < closest_points.length)) {
+        if (ctx.isPointInPath(c.drawing, e.offsetX, e.offsetY)) {
+            if(c.state == 0) {
+                ctx.fillStyle = CHANGE_FILL;
+                c.state = 1;
+            } else {
+                ctx.fillStyle = DEFAULT_FILL;
+                c.state = 0;
+            }
+            
+        }
+        // Draw circle
+        ctx.fill(c.drawing);
+    }
+}
 
 function createRandomizedRoads(numRoads) {
     let visited = new Set();
@@ -123,17 +160,27 @@ function createRandomizedRoads(numRoads) {
         let xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
             yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
 
-        if (visited.has([xPos1, yPos1, xPos2, yPos2].toString())) { continue; } else { 
+        while (visited.has([xPos1, yPos1, xPos2, yPos2].toString())) { 
             visited.add([xPos1, yPos1, xPos2, yPos2].toString());
             visited.add([xPos2, yPos2, xPos1, yPos1].toString()); 
+            xPos1 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
+            yPos1 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
+            xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
+            yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
         }
         
         let start, end;
         if(i > 0) {
             start = roads[i-1].end;
-            if(true) { // Make angle between road i and i+1 at least 30 degrees, need to use cosine law
-                end = new Point(xPos2, yPos2);
+            let vec = new Vector(xPos2 - start.x, yPos2 - start.y);
+            let angle_diff = vec.angleDiff(roads[i-1].toVector().reflect()).toDeg();
+            while(angle_diff < 45 || angle_diff > 315) { // Make angle between road i and i-1 at least 45 degrees, need to use dot product
+                xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
+                yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
+                vec = new Vector(xPos2 - start.x, yPos2 - start.y);
+                angle_diff = vec.angleDiff(roads[i-1].toVector());
             }
+            end = new Point(xPos2, yPos2);
         } else {
             start = new Point(xPos1, yPos1);
             end = new Point(xPos2, yPos2);
@@ -141,11 +188,20 @@ function createRandomizedRoads(numRoads) {
         let road = new Road(start, end);
         road.draw();
         roads.push(road);
-        console.log("Road from: (" + xPos1.toString() + ", " + yPos1.toString() + ") to (" + xPos2.toString() + ", " + yPos2.toString() + ")");
+        //console.log("Road from: (" + xPos1.toString() + ", " + yPos1.toString() + ") to (" + xPos2.toString() + ", " + yPos2.toString() + ")");
     }
+    // Close the loop
+    let last_road = new Road(roads.last().end, roads[0].start); 
+    last_road.draw();
+    roads.push(last_road);
 }
 
 function getIntersection(road1, road2) {
+
+    // If they intersect at the endpoints
+    if(road1.start == road2.end) { return road1.start; }
+    if(road1.end == road2.start) { return road2.start; }
+
     // Develop line equation for road 1, y = mx + b
     let in1_1 = road1.start;
     let in1_2 = road1.end;
@@ -178,8 +234,8 @@ function getAllIntersections(roads) { // Returns all road intersections in the g
             let int = getIntersection(roads[i], roads[j]);
             if(int != null) { 
                 let circle = new Path2D();
-                circle.arc(int.x, int.y, 8, 0, 2 * Math.PI);
-                ctx.fillStyle = 'white';
+                circle.arc(int.x, int.y, ROAD_WIDTH, 0, 2 * Math.PI);
+                ctx.fillStyle = DEFAULT_FILL;
                 ctx.fill(circle);
                 intersections.set(int, {'drawing': circle, 'state': 0, 'roads': [i,j]}); 
             }
@@ -227,13 +283,7 @@ function getNearestPointsInRange(points, rpoint, range) {
     return output;
 }
 
-// createRoad(new Point(50, 100), new Point(300, 100));
-// createRoad(new Point(300, 100), new Point(300, 200));
-// createRoad(new Point(300, 200), new Point(500, 200));
-// createRoad(new Point(500, 200), new Point(700, 500));
-// createRoad(new Point(700, 500), new Point(200, 600));
-// createRoad(new Point(200, 600), new Point(150, 200));
-createRandomizedRoads(10);
+createRandomizedRoads(10); // Will create n+1 roads due to the loop closure
 getAllIntersections(roads);
 
 // Sorting intersections to perform binary search lookup on mouse event to reduce runtime
