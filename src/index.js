@@ -337,8 +337,6 @@ function createChildRoads() {
         return intersections_on_road.concat([road.start, road.end]).sort(function(a,b) { return a.x - b.x; }); // Include road endpoints and sort based on x value
     }
 
-    if(!intersectionPoints.length) { newRoads = roads; }
-
     for(let i = 0; i < roads.length; ++i) {
         local_intersections = getIntersectionsOnRoad(roads[i]);
         for(let i = 0; i < local_intersections.length - 1; ++i) {
