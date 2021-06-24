@@ -6,6 +6,7 @@ const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
 const DEFAULT_FILL = 'red';
 const CHANGE_FILL = 'green';
+const MOVE_FILL = 'blue';
 
 Number.prototype.between = function(a, b) {
     var min = Math.min.apply(Math, [a, b]),
@@ -13,13 +14,76 @@ Number.prototype.between = function(a, b) {
     return this >= min && this <= max;
 };
 
+Number.prototype.betweenNonInclusive = function(a, b) {
+    var min = Math.min.apply(Math, [a, b]),
+      max = Math.max.apply(Math, [a, b]);
+    return this > min && this < max;
+};
+
 Number.prototype.toDeg = function() { 
     return this*180 / Math.PI;
+};
+
+Number.prototype.equals = function(other) {
+    return Math.abs(this - other) < 0.00001;
 };
 
 Array.prototype.last = function(){
     return this[this.length - 1];
 };
+
+var roads = [];
+var newRoads = [];
+var newIntersectionRoads = [];
+var intersections = new Map();
+var intersectionPoints = [];
+
+var lastPosX;
+var lastPosY;
+
+window.onload = function() {
+    createRandomizedRoads(7);
+    getAllIntersections(roads);
+
+    // Sorting intersections to perform binary search lookup on mouse event to reduce runtime
+    intersections = new Map([...intersections].sort((a, b) => {
+    return (a[0].x < b[0].x) ? -1 : 1
+    }));
+
+    // Get sorted intersection points in array
+    intersectionPoints = Array.from(intersections.keys());
+
+    createChildRoads();
+    roads = newRoads;
+
+    lastPosX = roads[0].start.x;
+    lastPosY = roads[0].start.y;
+	setInterval(function()
+	{
+		draw();
+	}, 1000/60);
+};
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let circle = new Path2D();
+
+    roads.map(road => road.draw());
+    intersectionPoints.map(point => {
+        (intersections.get(point).state == 1) ? point.draw(CHANGE_FILL) : point.draw(DEFAULT_FILL);
+    });
+
+    dx = Math.round(Math.random()*2-1);
+    dy = Math.round(Math.random()*2-1);
+
+    circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
+    ctx.fillStyle = MOVE_FILL;
+    ctx.fill(circle);
+
+    lastPosX += dx;
+    lastPosY += dy;
+}
 
 
 // Log mouse position
@@ -33,15 +97,23 @@ canvas.addEventListener('mousedown', function(e) {
     changeIntersectionColour(e);
 });
 
-var roads = [];
-var intersections = new Map();
-var intersectionPoints = [];
-
 
 class Point {
   constructor(x, y) {
     this.x = x;
     this.y = y;
+  }
+
+  draw(colour) {
+    let circle = new Path2D();
+    circle.arc(this.x, this.y, ROAD_WIDTH, 0, 2 * Math.PI);
+    ctx.fillStyle = colour;
+    ctx.fill(circle);
+    return circle;
+  }
+
+  equals(point) {
+      return (Math.abs(point.x - this.x) < 0.001) && (Math.abs(point.y - this.y) < 0.001);
   }
 }
 
@@ -62,6 +134,10 @@ class Vector {
 
     reflect() {
         return new Vector(-this.xdist, -this.ydist);
+    }
+
+    unitVector() {
+        return new Vector(this.xdist / this.mag(), this.ydist / this.mag());
     }
 }
 
@@ -154,7 +230,7 @@ function changeIntersectionColour(e) {
 
 function createRandomizedRoads(numRoads) {
     let visited = new Set();
-    for(var i = 0; i < numRoads; ++i) {
+    for(var i = 0; i < numRoads - 1; ++i) {
         let xPos1 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
             yPos1 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
         let xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
@@ -178,7 +254,7 @@ function createRandomizedRoads(numRoads) {
                 xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
                 yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
                 vec = new Vector(xPos2 - start.x, yPos2 - start.y);
-                angle_diff = vec.angleDiff(roads[i-1].toVector());
+                angle_diff = vec.angleDiff(roads[i-1].toVector().reflect()).toDeg();
             }
             end = new Point(xPos2, yPos2);
         } else {
@@ -186,21 +262,21 @@ function createRandomizedRoads(numRoads) {
             end = new Point(xPos2, yPos2);
         }
         let road = new Road(start, end);
-        road.draw();
         roads.push(road);
         //console.log("Road from: (" + xPos1.toString() + ", " + yPos1.toString() + ") to (" + xPos2.toString() + ", " + yPos2.toString() + ")");
     }
     // Close the loop
     let last_road = new Road(roads.last().end, roads[0].start); 
-    last_road.draw();
     roads.push(last_road);
 }
 
 function getIntersection(road1, road2) {
 
     // If they intersect at the endpoints
-    if(road1.start == road2.end) { return road1.start; }
-    if(road1.end == road2.start) { return road2.start; }
+    if(road1.start.equals(road2.end)) { return road1.start; }
+    if(road1.end.equals(road2.start)) { return road1.end; }
+    if(road1.start.equals(road2.start)) { return road1.start; }
+    if(road1.end.equals(road2.end)) { return road1.end; }
 
     // Develop line equation for road 1, y = mx + b
     let in1_1 = road1.start;
@@ -222,7 +298,7 @@ function getIntersection(road1, road2) {
     let y_int = m_1*x_int + b_1;
 
     // Check that intersection point is between start and end of road1 and road2 to confirm intersection exists
-    if (x_int.between(in1_1.x, in1_2.x) && y_int.between(in1_1.y, in1_2.y) && x_int.between(in2_1.x, in2_2.x) && y_int.between(in2_1.y, in2_2.y)){
+    if (x_int.between(in1_1.x, in1_2.x) && y_int.between(in1_1.y, in1_2.y) && x_int.between(in2_1.x, in2_2.x) && y_int.between(in2_1.y, in2_2.y)) {
         return new Point(x_int, y_int); 
     }
     return null;
@@ -233,16 +309,48 @@ function getAllIntersections(roads) { // Returns all road intersections in the g
         for(let j = i+1; j < roads.length; ++j) {
             let int = getIntersection(roads[i], roads[j]);
             if(int != null) { 
-                let circle = new Path2D();
-                circle.arc(int.x, int.y, ROAD_WIDTH, 0, 2 * Math.PI);
-                ctx.fillStyle = DEFAULT_FILL;
-                ctx.fill(circle);
-                intersections.set(int, {'drawing': circle, 'state': 0, 'roads': [i,j]}); 
+                let drawing = int.draw(DEFAULT_FILL);
+                intersections.set(int, {'drawing': drawing, 'state': 0}); 
             }
         }
     }
     return intersections;
 }
+
+function createChildRoads() {
+    function getIntersectionsOnRoad(road) {
+        let start_x = road.start.x;
+        let end_x = road.end.x;
+        let start_y = road.start.y;
+        let end_y = road.end.y;
+
+        let i = 0;
+        let j = roads.length - 1;
+
+        if(start_x > end_x) { let temp = end_x; end_x = start_x; start_x = temp; }
+        while(intersectionPoints[i].x < start_x) { ++i; }
+        while(intersectionPoints[j].x > end_x) { --j; }
+
+        let intersections_between_road = intersectionPoints.slice(i, j+1).filter(point => point.y.betweenNonInclusive(start_y, end_y) && !point.equals(road.start) && !point.equals(road.end));
+        let intersections_on_road = intersections_between_road.filter(point => {
+            let temp_road = new Road(point, road.start); 
+            return temp_road.slope().equals(road.slope()); 
+        });
+
+        return intersections_on_road.concat([road.start, road.end]).sort(function(a,b) { return a.x - b.x; }); // Include road endpoints and sort based on x value
+    }
+
+    if(!intersectionPoints.length) { newRoads = roads; }
+
+    for(let i = 0; i < roads.length; ++i) {
+        local_intersections = getIntersectionsOnRoad(roads[i]);
+        for(let i = 0; i < local_intersections.length - 1; ++i) {
+            newRoads.push(new Road(local_intersections[i], local_intersections[i+1])); 
+        }
+    }
+}
+
+
 
 function getNearestPointsInRange(points, rpoint, range) {
     let i = 0;
@@ -283,13 +391,3 @@ function getNearestPointsInRange(points, rpoint, range) {
     return output;
 }
 
-createRandomizedRoads(10); // Will create n+1 roads due to the loop closure
-getAllIntersections(roads);
-
-// Sorting intersections to perform binary search lookup on mouse event to reduce runtime
-intersections = new Map([...intersections].sort((a, b) => {
-   return (a[0].x < b[0].x) ? -1 : 1
-}));
-
-// Get sorted intersection points in array
-intersectionPoints = Array.from(intersections.keys());
