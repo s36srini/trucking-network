@@ -34,7 +34,6 @@ Array.prototype.last = function(){
 
 var roads = [];
 var newRoads = [];
-var newIntersectionRoads = [];
 var intersections = new Map();
 var intersectionPoints = [];
 
@@ -47,7 +46,7 @@ window.onload = function() {
 
     // Sorting intersections to perform binary search lookup on mouse event to reduce runtime
     intersections = new Map([...intersections].sort((a, b) => {
-    return (a[0].x < b[0].x) ? -1 : 1
+        return (a[0].x < b[0].x) ? -1 : 1
     }));
 
     // Get sorted intersection points in array
@@ -207,7 +206,6 @@ class Road {
     }
 }
 
-
 function changeIntersectionColour(e) {
     let c;
     let closest_points = getNearestPointsInRange(intersectionPoints, new Point(e.offsetX, e.offsetY), ROAD_WIDTH);
@@ -271,7 +269,6 @@ function createRandomizedRoads(numRoads) {
 }
 
 function getIntersection(road1, road2) {
-
     // If they intersect at the endpoints
     if(road1.start.equals(road2.end)) { return road1.start; }
     if(road1.end.equals(road2.start)) { return road1.end; }
@@ -349,8 +346,6 @@ function createChildRoads() {
         }
     }
 }
-
-
 
 function getNearestPointsInRange(points, rpoint, range) {
     let i = 0;
