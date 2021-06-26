@@ -2,6 +2,8 @@ var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
 const ROAD_WIDTH  = 10;
+const NUM_ROADS = 10;
+const SPEED_FACTOR = 10;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
 const DEFAULT_FILL = 'red';
@@ -28,6 +30,10 @@ Number.prototype.equals = function(other) {
     return Math.abs(this - other) < 0.0001;
 };
 
+Number.prototype.customRandom = function() { // Generates random integer between 0 and this
+    return Math.floor(Math.random() * this);
+};
+
 Array.prototype.last = function(){
     return this[this.length - 1];
 };
@@ -45,8 +51,13 @@ var intersectionPoints = [];
 var lastPosX;
 var lastPosY;
 
+var currentRoad;
+var startNodeIndex = 0;
+var endNodeIndex;
+
 window.onload = function() {
-    createRandomizedRoads(7);
+    new Math.seedrandom('ohhh yeah');
+    createRandomizedRoads(NUM_ROADS);
     getAllIntersections(roads);
 
     // Sorting intersections to perform binary search lookup on mouse event to reduce runtime
@@ -60,8 +71,12 @@ window.onload = function() {
     createChildRoads();
     roads = newRoads;
 
-    lastPosX = roads[0].start.x;
-    lastPosY = roads[0].start.y;
+    endNodeIndex = graph[startNodeIndex][0];
+
+    currentRoad = new Road(intersectionPoints[startNodeIndex], intersectionPoints[endNodeIndex]);
+    lastPosX = currentRoad.start.x;
+    lastPosY = currentRoad.start.y;
+
 	setInterval(function()
 	{
 		draw();
@@ -78,8 +93,18 @@ function draw() {
         (intersections.get(point).state == 1) ? point.draw(CHANGE_FILL) : point.draw(DEFAULT_FILL);
     });
 
-    dx = Math.round(Math.random()*2-1);
-    dy = Math.round(Math.random()*2-1);
+    if(!lastPosX.between(currentRoad.start.x, currentRoad.end.x) || !lastPosY.between(currentRoad.start.y, currentRoad.end.y)) {
+        startNodeIndex = endNodeIndex;
+        endNodeIndex = graph[startNodeIndex][(graph[startNodeIndex].length).customRandom()];
+        currentRoad = new Road(intersectionPoints[startNodeIndex], intersectionPoints[endNodeIndex]);
+        lastPosX = currentRoad.start.x;
+        lastPosY = currentRoad.start.y;
+    }
+
+    let unit_vec = currentRoad.toVector().unitVector();
+
+    dx = unit_vec.xdist * SPEED_FACTOR;
+    dy = unit_vec.ydist * SPEED_FACTOR;
 
     circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
     ctx.fillStyle = MOVE_FILL;
@@ -220,11 +245,12 @@ function changeIntersectionColour(e) {
             if(c.state == 0) {
                 ctx.fillStyle = CHANGE_FILL;
                 c.state = 1;
+                document.getElementById("intIndex").innerHTML = intersectionPoints.indexOf(closest_points[i-1]);
             } else {
                 ctx.fillStyle = DEFAULT_FILL;
                 c.state = 0;
-            }
-            
+                document.getElementById("intIndex").innerHTML = "";
+            }  
         }
         // Draw circle
         ctx.fill(c.drawing);
@@ -395,4 +421,3 @@ function getNearestPointsInRange(points, rpoint, range) {
     }
     return output;
 }
-
