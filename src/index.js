@@ -2,6 +2,8 @@ var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
 const ROAD_WIDTH  = 10;
+const NUM_ROADS = 10;
+const SPEED_FACTOR = 10;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
 const DEFAULT_FILL = 'red';
@@ -11,7 +13,7 @@ const MOVE_FILL = 'blue';
 Number.prototype.between = function(a, b) {
     var min = Math.min.apply(Math, [a, b]),
       max = Math.max.apply(Math, [a, b]);
-    return this >= min && this <= max;
+    return (this > min && this < max) || (this.equals(max) || this.equals(min));
 };
 
 Number.prototype.betweenNonInclusive = function(a, b) {
@@ -25,23 +27,37 @@ Number.prototype.toDeg = function() {
 };
 
 Number.prototype.equals = function(other) {
-    return Math.abs(this - other) < 0.00001;
+    return Math.abs(this - other) < 0.0001;
+};
+
+Number.prototype.customRandom = function() { // Generates random integer between 0 and this
+    return Math.floor(Math.random() * this);
 };
 
 Array.prototype.last = function(){
     return this[this.length - 1];
 };
 
+Array.prototype.custom_push = function(idx, elem) {
+    this[idx] ? this[idx].push(elem) : this[idx] = [elem];
+};
+
 var roads = [];
 var newRoads = [];
+var graph = [];
 var intersections = new Map();
 var intersectionPoints = [];
 
 var lastPosX;
 var lastPosY;
 
+var currentRoad;
+var startNodeIndex = 0;
+var endNodeIndex;
+
 window.onload = function() {
-    createRandomizedRoads(7);
+    new Math.seedrandom('ohhh yeah');
+    createRandomizedRoads(NUM_ROADS);
     getAllIntersections(roads);
 
     // Sorting intersections to perform binary search lookup on mouse event to reduce runtime
@@ -55,8 +71,12 @@ window.onload = function() {
     createChildRoads();
     roads = newRoads;
 
-    lastPosX = roads[0].start.x;
-    lastPosY = roads[0].start.y;
+    endNodeIndex = graph[startNodeIndex][0];
+
+    currentRoad = new Road(intersectionPoints[startNodeIndex], intersectionPoints[endNodeIndex]);
+    lastPosX = currentRoad.start.x;
+    lastPosY = currentRoad.start.y;
+
 	setInterval(function()
 	{
 		draw();
@@ -73,8 +93,18 @@ function draw() {
         (intersections.get(point).state == 1) ? point.draw(CHANGE_FILL) : point.draw(DEFAULT_FILL);
     });
 
-    dx = Math.round(Math.random()*2-1);
-    dy = Math.round(Math.random()*2-1);
+    if(!lastPosX.between(currentRoad.start.x, currentRoad.end.x) || !lastPosY.between(currentRoad.start.y, currentRoad.end.y)) {
+        startNodeIndex = endNodeIndex;
+        endNodeIndex = graph[startNodeIndex][(graph[startNodeIndex].length).customRandom()];
+        currentRoad = new Road(intersectionPoints[startNodeIndex], intersectionPoints[endNodeIndex]);
+        lastPosX = currentRoad.start.x;
+        lastPosY = currentRoad.start.y;
+    }
+
+    let unit_vec = currentRoad.toVector().unitVector();
+
+    dx = unit_vec.xdist * SPEED_FACTOR;
+    dy = unit_vec.ydist * SPEED_FACTOR;
 
     circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
     ctx.fillStyle = MOVE_FILL;
@@ -215,11 +245,12 @@ function changeIntersectionColour(e) {
             if(c.state == 0) {
                 ctx.fillStyle = CHANGE_FILL;
                 c.state = 1;
+                document.getElementById("intIndex").innerHTML = intersectionPoints.indexOf(closest_points[i-1]);
             } else {
                 ctx.fillStyle = DEFAULT_FILL;
                 c.state = 0;
-            }
-            
+                document.getElementById("intIndex").innerHTML = "";
+            }  
         }
         // Draw circle
         ctx.fill(c.drawing);
@@ -315,33 +346,40 @@ function getAllIntersections(roads) { // Returns all road intersections in the g
 }
 
 function createChildRoads() {
-    function getIntersectionsOnRoad(road) {
+    function getIntersectionsOnRoadIndices(road) {
         let start_x = road.start.x;
         let end_x = road.end.x;
         let start_y = road.start.y;
         let end_y = road.end.y;
 
         let i = 0;
-        let j = roads.length - 1;
+        let j = intersectionPoints.length - 1;
 
         if(start_x > end_x) { let temp = end_x; end_x = start_x; start_x = temp; }
         while(intersectionPoints[i].x < start_x) { ++i; }
         while(intersectionPoints[j].x > end_x) { --j; }
 
-        let intersections_between_road = intersectionPoints.slice(i, j+1).filter(point => point.y.betweenNonInclusive(start_y, end_y) && !point.equals(road.start) && !point.equals(road.end));
-        let intersections_on_road = intersections_between_road.filter(point => {
-            let temp_road = new Road(point, road.start); 
+        let indices = Array(j-i+1).fill().map((_, n) => n + i);
+
+        let intersections_between_road_indices = indices.filter(index => intersectionPoints[index].y.between(start_y, end_y));
+        let intersections_on_road_indices = intersections_between_road_indices.filter(index => {
+            if(road.start.equals(intersectionPoints[index]) || road.end.equals(intersectionPoints[index])) return true;
+            let temp_road = new Road(intersectionPoints[index], road.start); 
             return temp_road.slope().equals(road.slope()); 
         });
-
-        return intersections_on_road.concat([road.start, road.end]).sort(function(a,b) { return a.x - b.x; }); // Include road endpoints and sort based on x value
+        return intersections_on_road_indices.sort(function(a,b) { return intersectionPoints[a].x - intersectionPoints[b].x; }); // Include road endpoints and sort based on x value
     }
 
     for(let i = 0; i < roads.length; ++i) {
-        local_intersections = getIntersectionsOnRoad(roads[i]);
-        for(let i = 0; i < local_intersections.length - 1; ++i) {
-            newRoads.push(new Road(local_intersections[i], local_intersections[i+1])); 
+        let local_intersection_indices = getIntersectionsOnRoadIndices(roads[i]);
+        for(let i = 0; i < local_intersection_indices.length - 1; ++i) {
+            newRoads.push(new Road(intersectionPoints[local_intersection_indices[i]], intersectionPoints[local_intersection_indices[i+1]])); 
+            if(i > 0) {
+                graph.custom_push(local_intersection_indices[i], local_intersection_indices[i-1]);
+            }
+            graph.custom_push(local_intersection_indices[i], local_intersection_indices[i+1]);
         }
+        graph.custom_push(local_intersection_indices.last(), local_intersection_indices[local_intersection_indices.length - 2]);
     }
 }
 
@@ -383,4 +421,3 @@ function getNearestPointsInRange(points, rpoint, range) {
     }
     return output;
 }
-
