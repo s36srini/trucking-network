@@ -1,9 +1,9 @@
 var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
-const ROAD_WIDTH  = 10;
+const ROAD_WIDTH  = 15;
 const NUM_ROADS = 10;
-const SPEED_FACTOR = 10;
+const SPEED_FACTOR = 15;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
 const DEFAULT_FILL = 'red';
@@ -86,8 +86,6 @@ window.onload = function() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    let circle = new Path2D();
-
     roads.map(road => road.draw());
     intersectionPoints.map(point => {
         (intersections.get(point).state == 1) ? point.draw(CHANGE_FILL) : point.draw(DEFAULT_FILL);
@@ -106,6 +104,7 @@ function draw() {
     dx = unit_vec.xdist * SPEED_FACTOR;
     dy = unit_vec.ydist * SPEED_FACTOR;
 
+    let circle = new Path2D();
     circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
     ctx.fillStyle = MOVE_FILL;
     ctx.fill(circle);
