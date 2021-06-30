@@ -6,6 +6,8 @@ const NUM_ROADS = 10;
 const SPEED_FACTOR = 15;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
+const CANVAS_OFFSET_WIDTH = canvas.width/20;
+const CANVAS_OFFSET_HEIGHT = canvas.height/20;
 const DEFAULT_FILL = 'red';
 const CHANGE_FILL = 'green';
 const MOVE_FILL = 'blue';
@@ -259,18 +261,18 @@ function changeIntersectionColour(e) {
 function createRandomizedRoads(numRoads) {
     let visited = new Set();
     for(var i = 0; i < numRoads - 1; ++i) {
-        let xPos1 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
-            yPos1 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
-        let xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
-            yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
+        let xPos1 =  Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
+            yPos1 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
+        let xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
+            yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
 
         while (visited.has([xPos1, yPos1, xPos2, yPos2].toString())) { 
             visited.add([xPos1, yPos1, xPos2, yPos2].toString());
             visited.add([xPos2, yPos2, xPos1, yPos1].toString()); 
-            xPos1 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
-            yPos1 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
-            xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
-            yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
+            xPos1 =  Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
+            yPos1 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
+            xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
+            yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
         }
         
         let start, end;
@@ -279,8 +281,8 @@ function createRandomizedRoads(numRoads) {
             let vec = new Vector(xPos2 - start.x, yPos2 - start.y);
             let angle_diff = vec.angleDiff(roads[i-1].toVector().reflect()).toDeg();
             while(angle_diff < 45 || angle_diff > 315) { // Make angle between road i and i-1 at least 45 degrees, need to use dot product
-                xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH + 1)),
-                yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT + 1));
+                xPos2 = Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH);
+                yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
                 vec = new Vector(xPos2 - start.x, yPos2 - start.y);
                 angle_diff = vec.angleDiff(roads[i-1].toVector().reflect()).toDeg();
             }
