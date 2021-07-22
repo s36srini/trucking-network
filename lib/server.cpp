@@ -29,8 +29,8 @@ int main() {
 	struct sockaddr_in servaddr = {0};
 
 	std::string hello = "hello from server";
-    char *p = &hello[0];
-	
+	char *p = &hello[0];
+
 	sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
 	if(sockfd == -1) {
 		perror("failed to create socket");
@@ -38,11 +38,11 @@ int main() {
 	}
 
 	signal(SIGINT, signal_callback_handler);
-	
+
 	servaddr.sin_family = AF_UNIX;
 	servaddr.sin_port = htons(12345);
 	servaddr.sin_addr.s_addr = INADDR_ANY;
-	
+
 	socklen_t len = 0;
 
 	while(true) {
@@ -56,5 +56,5 @@ int main() {
 	}
 
 	close(sockfd);
-    return 0;
+	return 0;
 }
