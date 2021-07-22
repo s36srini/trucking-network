@@ -25,16 +25,14 @@ void signal_callback_handler(int signum) {
    exit(signum);
 }
 
-int main()
-{
+int main() {
 	struct sockaddr_in servaddr = {0};
 
 	std::string hello = "hello from server";
     char *p = &hello[0];
 	
 	sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
-	if(sockfd == -1)
-	{
+	if(sockfd == -1) {
 		perror("failed to create socket");
 		exit(EXIT_FAILURE);
 	}
@@ -50,8 +48,7 @@ int main()
 	while(true) {
 		int len = sendto(sockfd, (const char *)p, strlen(p),
 		0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-		if(len ==-1)
-		{
+		if(len ==-1) {
 			perror("failed to send");
 		}
 		std::cout << "sending" << std::endl;

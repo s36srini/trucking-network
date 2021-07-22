@@ -20,14 +20,12 @@ void signal_callback_handler(int signum) {
    exit(signum);
 }
 
-int main()
-{
+int main() {
     char buffer[50] = {0};
 	struct sockaddr_in servaddr = {0};
 	
 	sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
-	if(sockfd == -1)
-	{
+	if(sockfd == -1) {
 		perror("failed to create socket");
 		exit(EXIT_FAILURE);
 	}
@@ -41,8 +39,7 @@ int main()
     int rc = bind(sockfd, (const struct sockaddr *)&servaddr, 
 		sizeof(servaddr));
 		
-	if(rc == -1)
-	{
+	if(rc == -1) {
 		perror("failed to bind");
 		close(sockfd);
 		exit(EXIT_FAILURE);
