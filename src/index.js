@@ -3,7 +3,8 @@ var ctx = canvas.getContext('2d');
 
 const ROAD_WIDTH  = 15;
 const NUM_ROADS = 10;
-const SPEED_FACTOR = 15;
+// Put the speed to 1 to see how the car is moving, change it back to 15 whenever you need to 
+const SPEED_FACTOR = 2;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
 const CANVAS_OFFSET_WIDTH = canvas.width/20;
@@ -85,6 +86,7 @@ window.onload = function() {
 	}, 1000/60);
 };
 
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -106,10 +108,18 @@ function draw() {
     dx = unit_vec.xdist * SPEED_FACTOR;
     dy = unit_vec.ydist * SPEED_FACTOR;
 
-    let circle = new Path2D();
-    circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
-    ctx.fillStyle = MOVE_FILL;
-    ctx.fill(circle);
+    // let circle = new Path2D();
+    // circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
+    // ctx.fillStyle = MOVE_FILL;
+    // ctx.fill(circle);
+
+    const carOne = document.getElementById("carOne");
+    const carTwo = document.getElementById("carTwo");
+    
+    ctx.drawImage(carOne, lastPosX, lastPosY, 15, 15);
+    // ctx.drawImage(carTwo, 300, 500 - 20, 15, 15);
+
+
 
     lastPosX += dx;
     lastPosY += dy;
