@@ -93,7 +93,7 @@ window.onload = function() {
 };
 
 
-function drawImage(ctx, img, x, y, angle, scale = 1) {
+function drawCar(ctx, img, x, y, angle, scale = 1) {
     if(currentRoad.toVector().ydist > 0 ) {
         angle *= -1;
     }
@@ -113,7 +113,7 @@ function draw() {
     const carOne = document.getElementById("carOne");
     const carTwo = document.getElementById("carTwo");
 
-    drawImage(ctx, carOne, lastPosX, lastPosY, rotateAngle);
+    drawCar(ctx, carOne, lastPosX, lastPosY, rotateAngle);
 
     roads.map(road => road.draw());
     intersectionPoints.map(point => {
