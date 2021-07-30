@@ -1,11 +1,11 @@
 var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
-const ROAD_WIDTH  = 15;
-const NUM_ROADS = 3;
+const ROAD_WIDTH = 20;
+const NUM_ROADS  = 10;
 
 // Put the speed to 1 to see how the car is moving, change it back to 15 whenever you need to 
-const SPEED_FACTOR = 2;
+const SPEED_FACTOR = 5;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
 const CANVAS_OFFSET_WIDTH = canvas.width/20;
@@ -93,17 +93,27 @@ window.onload = function() {
 };
 
 
+function drawImage(ctx, img, x, y, angle, scale = 1) {
+    if(currentRoad.toVector().ydist > 0 ) {
+        angle *= -1;
+    }
+    let vec_new_position = new Vector(x - CANVAS_WIDTH / 2, y - CANVAS_HEIGHT / 2).rotate(angle);
+
+    ctx.save();
+    ctx.translate(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+    ctx.rotate(-angle);
+    
+    ctx.drawImage(img, vec_new_position.xdist, vec_new_position.ydist, img.width * scale, img.height * scale);
+    ctx.restore();
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const carOne = document.getElementById("carOne");
     const carTwo = document.getElementById("carTwo");
 
-    ctx.save();
-    ctx.translate(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2); // change origin
-    ctx.rotate(-rotateAngle);
-    ctx.drawImage(carOne, lastPosX, lastPosY, 15, 15);
-    ctx.restore();
+    drawImage(ctx, carOne, lastPosX, lastPosY, rotateAngle);
 
     roads.map(road => road.draw());
     intersectionPoints.map(point => {
@@ -128,11 +138,6 @@ function draw() {
     // circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
     // ctx.fillStyle = MOVE_FILL;
     // ctx.fill(circle);
-
-    
-    
-    // ctx.drawImage(carTwo, 300, 500 - 20, 15, 15);
-
 
 
     lastPosX += dx;
@@ -183,7 +188,7 @@ class Vector {
 
     angleDiff(other) { // Other vector
         // Apply dot product formula
-        return Math.abs(Math.acos((this.xdist*other.xdist + this.ydist*other.ydist) / (this.mag()*other.mag())));
+        return Math.acos((this.xdist*other.xdist + this.ydist*other.ydist) / (this.mag()*other.mag()));
     }
 
     reflect() {
@@ -195,7 +200,7 @@ class Vector {
     }
 
     rotate(angle) {
-        return new Vector(this.x.cos());
+        return new Vector(this.xdist*Math.cos(angle) - this.ydist*Math.sin(angle), this.xdist*Math.sin(angle) + this.ydist*Math.cos(angle));
     }
 }
 
