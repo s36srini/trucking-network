@@ -2,7 +2,8 @@ var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
 const ROAD_WIDTH  = 15;
-const NUM_ROADS = 10;
+// Changed number of roads to get negative angle for car
+const NUM_ROADS = 3;
 // Put the speed to 1 to see how the car is moving, change it back to 15 whenever you need to 
 const SPEED_FACTOR = 2;
 const CANVAS_HEIGHT = canvas.height;
@@ -55,6 +56,9 @@ var lastPosX;
 var lastPosY;
 
 var currentRoad;
+var refHorizVector;
+var rotateAngle;
+var negativeAngle;
 var startNodeIndex = 0;
 var endNodeIndex;
 
@@ -80,11 +84,25 @@ window.onload = function() {
     lastPosX = currentRoad.start.x;
     lastPosY = currentRoad.start.y;
 
+    refHorizVector = new Vector(1, 0);
+    rotateAngle = currentRoad.toVector().angleDiff(refHorizVector);
+
 	setInterval(function()
 	{
 		draw();
 	}, 1000/60);
 };
+
+function drawImage(ctx, img, x, y, angle = 0, scale = 1){
+
+    ctx.save();
+    ctx.translate(x + img.width * scale / 2, y + img.height * scale / 2);
+    ctx.rotate(angle);
+    ctx.translate(- x - img.width * scale / 2, - y - img.height * scale / 2);
+    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+    ctx.restore();
+
+  }
 
 
 function draw() {
@@ -101,10 +119,10 @@ function draw() {
         currentRoad = new Road(intersectionPoints[startNodeIndex], intersectionPoints[endNodeIndex]);
         lastPosX = currentRoad.start.x;
         lastPosY = currentRoad.start.y;
+        rotateAngle = currentRoad.toVector().angleDiff(refHorizVector);
     }
 
     let unit_vec = currentRoad.toVector().unitVector();
-
     dx = unit_vec.xdist * SPEED_FACTOR;
     dy = unit_vec.ydist * SPEED_FACTOR;
 
@@ -113,11 +131,14 @@ function draw() {
     // ctx.fillStyle = MOVE_FILL;
     // ctx.fill(circle);
 
+
     const carOne = document.getElementById("carOne");
-    const carTwo = document.getElementById("carTwo");
+
+    // const carTwo = document.getElementById("carTwo");
+    // ctx.drawImage(carOne, lastPosX, lastPosY, 15, 15);
+
+    drawImage(ctx, carOne, lastPosX, lastPosY, rotateAngle, 0.4);
     
-    ctx.drawImage(carOne, lastPosX, lastPosY, 15, 15);
-    // ctx.drawImage(carTwo, 300, 500 - 20, 15, 15);
 
 
 
