@@ -1,9 +1,11 @@
 var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
-const ROAD_WIDTH  = 15;
-const NUM_ROADS = 10;
-const SPEED_FACTOR = 15;
+const ROAD_WIDTH = 20;
+const NUM_ROADS  = 10;
+
+// Put the speed to 1 to see how the car is moving, change it back to 15 whenever you need to 
+const SPEED_FACTOR = 5;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
 const CANVAS_OFFSET_WIDTH = canvas.width/20;
@@ -54,6 +56,8 @@ var lastPosX;
 var lastPosY;
 
 var currentRoad;
+var refHorizVector;
+var rotateAngle;
 var startNodeIndex = 0;
 var endNodeIndex;
 
@@ -79,14 +83,37 @@ window.onload = function() {
     lastPosX = currentRoad.start.x;
     lastPosY = currentRoad.start.y;
 
+    refHorizVector = new Vector(1, 0);
+    rotateAngle = currentRoad.toVector().angleDiff(refHorizVector);
+
 	setInterval(function()
 	{
 		draw();
 	}, 1000/60);
 };
 
+
+function drawCar(ctx, img, x, y, angle, scale = 1) {
+    if(currentRoad.toVector().ydist > 0 ) {
+        angle *= -1;
+    }
+    let vec_new_position = new Vector(x - CANVAS_WIDTH / 2, y - CANVAS_HEIGHT / 2).rotate(angle);
+
+    ctx.save();
+    ctx.translate(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+    ctx.rotate(-angle);
+    
+    ctx.drawImage(img, vec_new_position.xdist, vec_new_position.ydist, img.width * scale, img.height * scale);
+    ctx.restore();
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const carOne = document.getElementById("carOne");
+    const carTwo = document.getElementById("carTwo");
+
+    drawCar(ctx, carOne, lastPosX, lastPosY, rotateAngle);
 
     roads.map(road => road.draw());
     intersectionPoints.map(point => {
@@ -99,6 +126,7 @@ function draw() {
         currentRoad = new Road(intersectionPoints[startNodeIndex], intersectionPoints[endNodeIndex]);
         lastPosX = currentRoad.start.x;
         lastPosY = currentRoad.start.y;
+        rotateAngle = currentRoad.toVector().angleDiff(refHorizVector);
     }
 
     let unit_vec = currentRoad.toVector().unitVector();
@@ -106,10 +134,11 @@ function draw() {
     dx = unit_vec.xdist * SPEED_FACTOR;
     dy = unit_vec.ydist * SPEED_FACTOR;
 
-    let circle = new Path2D();
-    circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
-    ctx.fillStyle = MOVE_FILL;
-    ctx.fill(circle);
+    // let circle = new Path2D();
+    // circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
+    // ctx.fillStyle = MOVE_FILL;
+    // ctx.fill(circle);
+
 
     lastPosX += dx;
     lastPosY += dy;
@@ -159,7 +188,7 @@ class Vector {
 
     angleDiff(other) { // Other vector
         // Apply dot product formula
-        return Math.abs(Math.acos((this.xdist*other.xdist + this.ydist*other.ydist) / (this.mag()*other.mag())));
+        return Math.acos((this.xdist*other.xdist + this.ydist*other.ydist) / (this.mag()*other.mag()));
     }
 
     reflect() {
@@ -168,6 +197,10 @@ class Vector {
 
     unitVector() {
         return new Vector(this.xdist / this.mag(), this.ydist / this.mag());
+    }
+
+    rotate(angle) {
+        return new Vector(this.xdist*Math.cos(angle) - this.ydist*Math.sin(angle), this.xdist*Math.sin(angle) + this.ydist*Math.cos(angle));
     }
 }
 
