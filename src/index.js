@@ -89,7 +89,7 @@ window.onload = function() {
 	setInterval(function()
 	{
 		draw();
-	}, 1000/20);
+	}, 1000/60);
 };
 
 
