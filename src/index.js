@@ -2,8 +2,8 @@ var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
 const ROAD_WIDTH  = 15;
-// Changed number of roads to get negative angle for car
 const NUM_ROADS = 3;
+
 // Put the speed to 1 to see how the car is moving, change it back to 15 whenever you need to 
 const SPEED_FACTOR = 2;
 const CANVAS_HEIGHT = canvas.height;
@@ -58,7 +58,6 @@ var lastPosY;
 var currentRoad;
 var refHorizVector;
 var rotateAngle;
-var negativeAngle;
 var startNodeIndex = 0;
 var endNodeIndex;
 
@@ -90,23 +89,21 @@ window.onload = function() {
 	setInterval(function()
 	{
 		draw();
-	}, 1000/60);
+	}, 1000/20);
 };
-
-function drawImage(ctx, img, x, y, angle = 0, scale = 1){
-
-    ctx.save();
-    ctx.translate(x + img.width * scale / 2, y + img.height * scale / 2);
-    ctx.rotate(angle);
-    ctx.translate(- x - img.width * scale / 2, - y - img.height * scale / 2);
-    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-    ctx.restore();
-
-  }
 
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const carOne = document.getElementById("carOne");
+    const carTwo = document.getElementById("carTwo");
+
+    ctx.save();
+    ctx.translate(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2); // change origin
+    ctx.rotate(-rotateAngle);
+    ctx.drawImage(carOne, lastPosX, lastPosY, 15, 15);
+    ctx.restore();
 
     roads.map(road => road.draw());
     intersectionPoints.map(point => {
@@ -123,6 +120,7 @@ function draw() {
     }
 
     let unit_vec = currentRoad.toVector().unitVector();
+
     dx = unit_vec.xdist * SPEED_FACTOR;
     dy = unit_vec.ydist * SPEED_FACTOR;
 
@@ -131,14 +129,9 @@ function draw() {
     // ctx.fillStyle = MOVE_FILL;
     // ctx.fill(circle);
 
-
-    const carOne = document.getElementById("carOne");
-
-    // const carTwo = document.getElementById("carTwo");
-    // ctx.drawImage(carOne, lastPosX, lastPosY, 15, 15);
-
-    drawImage(ctx, carOne, lastPosX, lastPosY, rotateAngle, 0.4);
     
+    
+    // ctx.drawImage(carTwo, 300, 500 - 20, 15, 15);
 
 
 
@@ -199,6 +192,10 @@ class Vector {
 
     unitVector() {
         return new Vector(this.xdist / this.mag(), this.ydist / this.mag());
+    }
+
+    rotate(angle) {
+        return new Vector(this.x.cos());
     }
 }
 
