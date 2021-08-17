@@ -1,8 +1,10 @@
+import { pseudoRandom } from './random/random.js';
+
 var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
 const ROAD_WIDTH = 20;
-const NUM_ROADS  = 10;
+const NUM_ROADS  = 5;
 
 // Put the speed to 1 to see how the car is moving, change it back to 15 whenever you need to 
 const SPEED_FACTOR = 5;
@@ -46,6 +48,7 @@ Array.prototype.custom_push = function(idx, elem) {
     this[idx] ? this[idx].push(elem) : this[idx] = [elem];
 };
 
+// Global vars
 var roads = [];
 var newRoads = [];
 var graph = [];
@@ -62,7 +65,6 @@ var startNodeIndex = 0;
 var endNodeIndex;
 
 window.onload = function() {
-    new Math.seedrandom('ohhh yeah');
     createRandomizedRoads(NUM_ROADS);
     getAllIntersections(roads);
 
@@ -111,7 +113,6 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const carOne = document.getElementById("carOne");
-    const carTwo = document.getElementById("carTwo");
 
     drawCar(ctx, carOne, lastPosX, lastPosY, rotateAngle);
 
@@ -131,8 +132,8 @@ function draw() {
 
     let unit_vec = currentRoad.toVector().unitVector();
 
-    dx = unit_vec.xdist * SPEED_FACTOR;
-    dy = unit_vec.ydist * SPEED_FACTOR;
+    let dx = unit_vec.xdist * SPEED_FACTOR;
+    let dy = unit_vec.ydist * SPEED_FACTOR;
 
     // let circle = new Path2D();
     // circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
@@ -294,18 +295,18 @@ function changeIntersectionColour(e) {
 function createRandomizedRoads(numRoads) {
     let visited = new Set();
     for(var i = 0; i < numRoads - 1; ++i) {
-        let xPos1 =  Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
-            yPos1 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
-        let xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
-            yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
+        let xPos1 =  Math.floor(pseudoRandom() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
+            yPos1 = Math.floor(pseudoRandom() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
+        let xPos2 =  Math.floor(pseudoRandom() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
+            yPos2 = Math.floor(pseudoRandom() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
 
         while (visited.has([xPos1, yPos1, xPos2, yPos2].toString())) { 
             visited.add([xPos1, yPos1, xPos2, yPos2].toString());
             visited.add([xPos2, yPos2, xPos1, yPos1].toString()); 
-            xPos1 =  Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
-            yPos1 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
-            xPos2 =  Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
-            yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
+            xPos1 =  Math.floor(pseudoRandom() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
+            yPos1 = Math.floor(pseudoRandom() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
+            xPos2 =  Math.floor(pseudoRandom() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH),
+            yPos2 = Math.floor(pseudoRandom() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
         }
         
         let start, end;
@@ -314,8 +315,8 @@ function createRandomizedRoads(numRoads) {
             let vec = new Vector(xPos2 - start.x, yPos2 - start.y);
             let angle_diff = vec.angleDiff(roads[i-1].toVector().reflect()).toDeg();
             while(angle_diff < 45 || angle_diff > 315) { // Make angle between road i and i-1 at least 45 degrees, need to use dot product
-                xPos2 = Math.floor(Math.random() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH);
-                yPos2 = Math.floor(Math.random() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
+                xPos2 = Math.floor(pseudoRandom() * (CANVAS_WIDTH - 2*CANVAS_OFFSET_WIDTH + 1) + CANVAS_OFFSET_WIDTH);
+                yPos2 = Math.floor(pseudoRandom() * (CANVAS_HEIGHT - 2*CANVAS_OFFSET_HEIGHT + 1) + CANVAS_OFFSET_HEIGHT);
                 vec = new Vector(xPos2 - start.x, yPos2 - start.y);
                 angle_diff = vec.angleDiff(roads[i-1].toVector().reflect()).toDeg();
             }
@@ -404,6 +405,7 @@ function createChildRoads() {
         return intersections_on_road_indices.sort(function(a,b) { return intersectionPoints[a].x - intersectionPoints[b].x; }); // Include road endpoints and sort based on x value
     }
 
+    // Construct the adjacency list between intersections, serving as the graph representation of the network
     for(let i = 0; i < roads.length; ++i) {
         let local_intersection_indices = getIntersectionsOnRoadIndices(roads[i]);
         for(let i = 0; i < local_intersection_indices.length - 1; ++i) {
