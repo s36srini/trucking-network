@@ -3,11 +3,11 @@ import { pseudoRandom } from './random/random.js';
 var canvas = document.getElementById('myCanvas');
 var ctx = canvas.getContext('2d');
 
-const ROAD_WIDTH = 20;
-const NUM_ROADS  = 5;
+const ROAD_WIDTH = 25;
+const NUM_ROADS  = 7;
 
 // Put the speed to 1 to see how the car is moving, change it back to 15 whenever you need to 
-const SPEED_FACTOR = 5;
+const SPEED_FACTOR = 3;
 const CANVAS_HEIGHT = canvas.height;
 const CANVAS_WIDTH = canvas.width;
 const CANVAS_OFFSET_WIDTH = canvas.width/20;
@@ -104,6 +104,9 @@ function drawCar(ctx, img, x, y, angle, scale = 1) {
     ctx.save();
     ctx.translate(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
     ctx.rotate(-angle);
+
+    // Apply offset for car
+    ctx.translate(-0.5*ROAD_WIDTH, -0.5*ROAD_WIDTH);
     
     ctx.drawImage(img, vec_new_position.xdist, vec_new_position.ydist, img.width * scale, img.height * scale);
     ctx.restore();
