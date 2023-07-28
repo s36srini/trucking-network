@@ -14,4 +14,4 @@ export function pseudoRandom() {
     return parseFloat("0."+seed().toString()); 
 }
 
-var seed = xmur3("z");
+var seed = xmur3("asmldfaasdfeak");
