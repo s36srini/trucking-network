@@ -5,6 +5,7 @@ var ctx = canvas.getContext('2d');
 
 const ROAD_WIDTH = 25;
 const NUM_ROADS  = 7;
+const NUM_CARS = 5;
 
 // Put the speed to 1 to see how the car is moving, change it back to 15 whenever you need to 
 const SPEED_FACTOR = 3;
@@ -54,15 +55,10 @@ var newRoads = [];
 var graph = [];
 var intersections = new Map();
 var intersectionPoints = [];
+var cars = [];
 
-var lastPosX;
-var lastPosY;
-
-var currentRoad;
-var refHorizVector;
-var rotateAngle;
-var startNodeIndex = 0;
-var endNodeIndex;
+// Helper globals
+// 
 
 window.onload = function() {
     createRandomizedRoads(NUM_ROADS);
@@ -79,14 +75,13 @@ window.onload = function() {
     createChildRoads();
     roads = newRoads;
 
-    endNodeIndex = graph[startNodeIndex][0];
 
-    currentRoad = new Road(intersectionPoints[startNodeIndex], intersectionPoints[endNodeIndex]);
-    lastPosX = currentRoad.start.x;
-    lastPosY = currentRoad.start.y;
-
-    refHorizVector = new Vector(1, 0);
-    rotateAngle = currentRoad.toVector().angleDiff(refHorizVector);
+    // Initialize cars
+    for(let i = 0; i < NUM_CARS; i++) {
+        let carNum = "car" + (i+1);
+        let carImg = document.getElementById(carNum);
+        cars.push(new Car(carImg, Math.floor(Math.random() * NUM_ROADS)));
+    }
 
 	setInterval(function()
 	{
@@ -95,57 +90,22 @@ window.onload = function() {
 };
 
 
-function drawCar(ctx, img, x, y, angle, scale = 1) {
-    if(currentRoad.toVector().ydist > 0 ) {
-        angle *= -1;
-    }
-    let vec_new_position = new Vector(x - CANVAS_WIDTH / 2, y - CANVAS_HEIGHT / 2).rotate(angle);
-
-    ctx.save();
-    ctx.translate(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-    ctx.rotate(-angle);
-
-    // Apply offset for car
-    ctx.translate(-0.5*ROAD_WIDTH, -0.5*ROAD_WIDTH);
-    
-    ctx.drawImage(img, vec_new_position.xdist, vec_new_position.ydist, img.width * scale, img.height * scale);
-    ctx.restore();
-}
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const carOne = document.getElementById("carOne");
+    for(let car of cars) {
+        car.draw(ctx);
+        car.updatePosition();
+    }
 
-    drawCar(ctx, carOne, lastPosX, lastPosY, rotateAngle);
-
+    // draw roads
     roads.map(road => road.draw());
+
+    // raw intersection colours
     intersectionPoints.map(point => {
         (intersections.get(point).state == 1) ? point.draw(CHANGE_FILL) : point.draw(DEFAULT_FILL);
     });
-
-    if(!lastPosX.between(currentRoad.start.x, currentRoad.end.x) || !lastPosY.between(currentRoad.start.y, currentRoad.end.y)) {
-        startNodeIndex = endNodeIndex;
-        endNodeIndex = graph[startNodeIndex][(graph[startNodeIndex].length).customRandom()];
-        currentRoad = new Road(intersectionPoints[startNodeIndex], intersectionPoints[endNodeIndex]);
-        lastPosX = currentRoad.start.x;
-        lastPosY = currentRoad.start.y;
-        rotateAngle = currentRoad.toVector().angleDiff(refHorizVector);
-    }
-
-    let unit_vec = currentRoad.toVector().unitVector();
-
-    let dx = unit_vec.xdist * SPEED_FACTOR;
-    let dy = unit_vec.ydist * SPEED_FACTOR;
-
-    // let circle = new Path2D();
-    // circle.arc(lastPosX, lastPosY, ROAD_WIDTH, 0, 2 * Math.PI);
-    // ctx.fillStyle = MOVE_FILL;
-    // ctx.fill(circle);
-
-
-    lastPosX += dx;
-    lastPosY += dy;
 }
 
 
@@ -159,6 +119,94 @@ canvas.addEventListener('mousemove', function(e) {
 canvas.addEventListener('mousedown', function(e) {
     changeIntersectionColour(e);
 });
+
+class Car {
+    constructor(img, endNodeIndex) {
+        this.img = img;
+        this.endNodeIndex = endNodeIndex;
+        this.refHorizVector = new Vector(1, 0);
+
+        this.updateStartAndEndNodeIndices();
+        this.initialize();
+        
+    }
+
+    initialize() {
+        const start = intersectionPoints[this.startNodeIndex];
+        const end = intersectionPoints[this.endNodeIndex];
+
+        this.currentRoad = new Road(start, end);
+        this.lastPosX = start.x;
+        this.lastPosY = start.y;
+        this.rotateAngle = this.currentRoad.toVector().angleDiff(this.refHorizVector);
+    }
+
+    draw(ctx, scale = 1) {
+        let angle = this.rotateAngle;
+        if(this.currentRoad.toVector().ydist > 0 ) {
+            angle *= -1;
+        }
+        const carWidth = 0.5 * ROAD_WIDTH;
+        
+        const canvasCenterX = CANVAS_WIDTH / 2;
+        const canvasCenterY = CANVAS_HEIGHT / 2;
+
+        const vecNewPosition = new Vector(this.lastPosX  - canvasCenterX, this.lastPosY - canvasCenterY).rotate(angle);
+
+        ctx.save();
+        ctx.translate(canvasCenterX, canvasCenterY);
+        ctx.rotate(-angle);
+        
+        ctx.translate(-carWidth, -carWidth);
+        ctx.drawImage(this.img, vecNewPosition.xdist, vecNewPosition.ydist, this.img.width * scale, this.img.height * scale);
+        ctx.restore();
+    }
+
+    updatePosition() {
+        // Updates the car position and randomly picks a new road to go to
+        if (!this.isPositionInRange(this.lastPosX, this.lastPosY)) {
+            this.updateStartAndEndNodeIndices();
+            this.updateCurrentRoad();
+            this.updateLastPosition();
+            this.updateRotateAngle();
+        }
+
+        let unitVector = this.currentRoad.toVector().unitVector();
+
+        let dx = unitVector.xdist * SPEED_FACTOR;
+        let dy = unitVector.ydist * SPEED_FACTOR;
+
+        this.lastPosX += dx;
+        this.lastPosY += dy;
+    }
+
+    isPositionInRange(x, y) {
+        return x.between(this.currentRoad.start.x, this.currentRoad.end.x) &&
+            y.between(this.currentRoad.start.y, this.currentRoad.end.y);
+    }
+
+    updateStartAndEndNodeIndices() {
+        this.startNodeIndex = this.endNodeIndex;
+        this.endNodeIndex = graph[this.startNodeIndex][this.getRandomIndex(graph[this.startNodeIndex].length)];
+    }
+
+    updateCurrentRoad() {
+        this.currentRoad = new Road(intersectionPoints[this.startNodeIndex], intersectionPoints[this.endNodeIndex]);
+    }
+
+    updateLastPosition() {
+        this.lastPosX = this.currentRoad.start.x;
+        this.lastPosY = this.currentRoad.start.y;
+    }
+
+    updateRotateAngle() {
+        this.rotateAngle = this.currentRoad.toVector().angleDiff(this.refHorizVector);
+    }
+
+    getRandomIndex(length) {
+        return Math.floor(Math.random() * length);
+    }
+}
 
 
 class Point {
